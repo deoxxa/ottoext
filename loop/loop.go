@@ -1,4 +1,4 @@
-package loop
+package loop // import "fknsrs.biz/p/ottoext/loop"
 
 import (
 	"sync"

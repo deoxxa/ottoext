@@ -1,4 +1,4 @@
-package fetch
+package fetch // import "fknsrs.biz/p/ottoext/fetch"
 
 import (
 	"io"

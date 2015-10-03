@@ -1,4 +1,4 @@
-package promise
+package promise // import "fknsrs.biz/p/ottoext/promise"
 
 import (
 	"github.com/robertkrimen/otto"

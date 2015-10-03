@@ -1,4 +1,4 @@
-package timers
+package timers // import "fknsrs.biz/p/ottoext/timers"
 
 import (
 	"time"
