@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/GeertJohan/go.rice"
 	"github.com/robertkrimen/otto"
 
 	"fknsrs.biz/p/ottoext/loop"
@@ -57,7 +58,7 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 		return err
 	}
 
-	s, err := vm.Compile("fetch.js", string(MustAsset("js/bundle.js")))
+	s, err := vm.Compile("fetch.js", rice.MustFindBox("dist-fetch").MustString("bundle.js"))
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,12 @@
-bindata.go: js/bundle.js
-	go-bindata -o bindata.go -pkg promise -ignore 'node_modules|index|webpack|package' js
+dist-promise.rice-box.go: dist-promise/bundle.js
+	rice embed-go
+
+dist-promise/bundle.js: js/bundle.js
+	mkdir -p dist-promise
+	cp -a js/bundle.js dist-promise/bundle.js
 
 js/bundle.js: js/index.js js/package.json
 	cd js && npm install && npm run bundle
 
 clean:
-	rm -f bindata.go js/bundle.js
+	rm -rf dist-promise.rice-box.go dist-promise js/bundle.js

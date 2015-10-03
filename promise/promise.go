@@ -1,6 +1,7 @@
 package promise // import "fknsrs.biz/p/ottoext/promise"
 
 import (
+	"github.com/GeertJohan/go.rice"
 	"github.com/robertkrimen/otto"
 
 	"fknsrs.biz/p/ottoext/loop"
@@ -18,7 +19,7 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 		return err
 	}
 
-	s, err := vm.Compile("bundle.js", string(MustAsset("js/bundle.js")))
+	s, err := vm.Compile("bundle.js", rice.MustFindBox("dist-promise").MustString("bundle.js"))
 	if err != nil {
 		return err
 	}
