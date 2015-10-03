@@ -57,12 +57,7 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 		return err
 	}
 
-	d, err := Asset("js/bundle.js")
-	if err != nil {
-		return err
-	}
-
-	s, err := vm.Compile("fetch.js", string(d))
+	s, err := vm.Compile("fetch.js", string(MustAsset("js/bundle.js")))
 	if err != nil {
 		return err
 	}
