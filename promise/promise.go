@@ -1,0 +1,36 @@
+package promise
+
+import (
+	"github.com/robertkrimen/otto"
+
+	"fknsrs.biz/p/ottoext/loop"
+	"fknsrs.biz/p/ottoext/timers"
+)
+
+func Define(vm *otto.Otto, l *loop.Loop) error {
+	if v, err := vm.Get("Promise"); err != nil {
+		return err
+	} else if !v.IsUndefined() {
+		return nil
+	}
+
+	if err := timers.Define(vm, l); err != nil {
+		return err
+	}
+
+	d, err := Asset("js/bundle.js")
+	if err != nil {
+		return err
+	}
+
+	s, err := vm.Compile("bundle.js", string(d))
+	if err != nil {
+		return err
+	}
+
+	if _, err := vm.Run(s); err != nil {
+		return err
+	}
+
+	return nil
+}
