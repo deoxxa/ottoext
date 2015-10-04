@@ -116,3 +116,45 @@ func TestFetchHeaders(t *testing.T) {
 
 	<-ch
 }
+
+func TestFetchJSON(t *testing.T) {
+	m := http.NewServeMux()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// these spaces are here so we can disambiguate between this and the
+		// re-encoded data the javascript below spits out
+		w.Write([]byte("[ 1 , 2 , 3 ]"))
+	})
+	s := httptest.NewServer(m)
+	defer s.Close()
+
+	vm := otto.New()
+	l := loop.New(vm)
+
+	if err := Define(vm, l); err != nil {
+		panic(err)
+	}
+
+	ch := make(chan bool, 1)
+
+	if err := vm.Set("__capture", func(s string) {
+		defer func() { ch <- true }()
+
+		if s != `[1,2,3]` {
+			panic(fmt.Errorf("expected data to be json, and for that json to be parsed"))
+		}
+	}); err != nil {
+		panic(err)
+	}
+
+	must(l.EvalAndRun(`fetch('` + s.URL + `').then(function(r) { return r.json(); }).then(function(d) {
+    return setTimeout(__capture, 4, JSON.stringify(d));
+  })`))
+
+	<-ch
+}
+
+func TestFetchJSONRepeated(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		TestFetchJSON(t)
+	}
+}
