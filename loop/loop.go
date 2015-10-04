@@ -135,8 +135,10 @@ outer:
 	for {
 		select {
 		case t := <-l.ready:
-			if err := l.processTask(t); err != nil {
-				return err
+			if t != nil {
+				if err := l.processTask(t); err != nil {
+					return err
+				}
 			}
 		default:
 			break outer
