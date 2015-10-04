@@ -49,6 +49,25 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 	vm.Set("setTimeout", newTimer(false))
 	vm.Set("setInterval", newTimer(true))
 
+	vm.Set("setImmediate", func(call otto.FunctionCall) otto.Value {
+		t := &timerTask{
+			duration: time.Millisecond,
+			call:     call,
+		}
+		l.Add(t)
+
+		t.timer = time.AfterFunc(t.duration, func() {
+			l.Ready(t)
+		})
+
+		value, err := call.Otto.ToValue(t)
+		if err != nil {
+			panic(err)
+		}
+
+		return value
+	})
+
 	clearTimeout := func(call otto.FunctionCall) otto.Value {
 		v, _ := call.Argument(0).Export()
 		if t, ok := v.(*timerTask); ok {
@@ -61,6 +80,7 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 	}
 	vm.Set("clearTimeout", clearTimeout)
 	vm.Set("clearInterval", clearTimeout)
+	vm.Set("clearImmediate", clearTimeout)
 
 	return nil
 }
