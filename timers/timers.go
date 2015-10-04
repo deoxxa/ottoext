@@ -8,6 +8,11 @@ import (
 	"fknsrs.biz/p/ottoext/loop"
 )
 
+var minDelay = map[bool]int64{
+	true:  10,
+	false: 4,
+}
+
 func Define(vm *otto.Otto, l *loop.Loop) error {
 	if v, err := vm.Get("setTimeout"); err != nil {
 		return err
@@ -18,8 +23,8 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 	newTimer := func(interval bool) func(call otto.FunctionCall) otto.Value {
 		return func(call otto.FunctionCall) otto.Value {
 			delay, _ := call.Argument(1).ToInteger()
-			if delay <= 0 {
-				delay = 1
+			if delay < minDelay[interval] {
+				delay = minDelay[interval]
 			}
 
 			t := &timerTask{
