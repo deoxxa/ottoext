@@ -14,4 +14,9 @@ module.exports = {
       },
     ],
   },
+  node: {
+    console: false,
+    process: false,
+    setImmediate: false,
+  },
 };
