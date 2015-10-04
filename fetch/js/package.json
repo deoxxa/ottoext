@@ -1,6 +1,7 @@
 {
   "scripts": {
     "bundle": "webpack -v -p",
+    "bundle-dev": "webpack -v -d",
     "watch": "webpack -v -w"
   },
   "devDependencies": {
