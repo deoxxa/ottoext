@@ -21,7 +21,7 @@ export default class Headers {
   append(name, value) {
     const normalisedName = Headers.normaliseName(name);
 
-    if (!Object.hasOwnProperty(this._headers, normalisedName)) {
+    if (!Object.hasOwnProperty.call(this._headers, normalisedName)) {
       this._headers[normalisedName] = [];
     }
 
