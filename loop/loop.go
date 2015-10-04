@@ -1,11 +1,20 @@
 package loop // import "fknsrs.biz/p/ottoext/loop"
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/robertkrimen/otto"
 )
+
+func formatTask(t Task) string {
+	if t == nil {
+		return "<nil>"
+	}
+
+	return fmt.Sprintf("<%T> %d", t, t.GetID())
+}
 
 type Task interface {
 	SetID(id int64)
@@ -24,10 +33,14 @@ type Loop struct {
 }
 
 func New(vm *otto.Otto) *Loop {
+	return NewWithBacklog(vm, 0)
+}
+
+func NewWithBacklog(vm *otto.Otto, backlog int) *Loop {
 	return &Loop{
 		vm:    vm,
 		tasks: make(map[int64]Task),
-		ready: make(chan Task),
+		ready: make(chan Task, backlog),
 	}
 }
 
@@ -77,65 +90,60 @@ func (l *Loop) Eval(s interface{}) error {
 	return nil
 }
 
-func (l *Loop) Run() error {
-	i := 0
+func (l *Loop) processTask(t Task) error {
+	id := t.GetID()
 
-	for t := range l.ready {
-		i++
-
-		if t != nil {
-			id := t.GetID()
-
-			if err := t.Execute(l.vm, l); err != nil {
-				l.lock.RLock()
-				for _, t := range l.tasks {
-					t.Cancel()
-				}
-				l.lock.RUnlock()
-
-				return err
-			}
-
-			l.removeByID(id)
-		}
-
+	if err := t.Execute(l.vm, l); err != nil {
 		l.lock.RLock()
-		if len(l.tasks) == 0 {
-			close(l.ready)
-			l.closed = true
+		for _, t := range l.tasks {
+			t.Cancel()
 		}
 		l.lock.RUnlock()
+
+		return err
 	}
+
+	l.removeByID(id)
 
 	return nil
 }
 
-func (l *Loop) Step() (error, bool) {
-	var tasks []Task
+func (l *Loop) Run() error {
+	for {
+		t := <-l.ready
 
+		if t != nil {
+			if err := l.processTask(t); err != nil {
+				return err
+			}
+		}
+
+		l.lock.Lock()
+		if len(l.tasks) == 0 {
+			// prevent any more tasks entering the ready channel
+			l.closed = true
+
+			l.lock.Unlock()
+
+			break
+		}
+		l.lock.Unlock()
+	}
+
+	// drain ready channel of any existing tasks
 outer:
 	for {
 		select {
 		case t := <-l.ready:
-			tasks = append(tasks, t)
-
-			l.remove(t)
+			if err := l.processTask(t); err != nil {
+				return err
+			}
 		default:
 			break outer
 		}
 	}
 
-	for _, t := range tasks {
-		if err := t.Execute(l.vm, l); err != nil {
-			l.lock.RLock()
-			for _, t := range l.tasks {
-				t.Cancel()
-			}
-			l.lock.RUnlock()
+	close(l.ready)
 
-			return err, false
-		}
-	}
-
-	return nil, len(l.tasks) == 0
+	return nil
 }
