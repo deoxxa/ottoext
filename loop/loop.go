@@ -110,14 +110,6 @@ func (l *Loop) processTask(t Task) error {
 
 func (l *Loop) Run() error {
 	for {
-		t := <-l.ready
-
-		if t != nil {
-			if err := l.processTask(t); err != nil {
-				return err
-			}
-		}
-
 		l.lock.Lock()
 		if len(l.tasks) == 0 {
 			// prevent any more tasks entering the ready channel
@@ -128,6 +120,14 @@ func (l *Loop) Run() error {
 			break
 		}
 		l.lock.Unlock()
+
+		t := <-l.ready
+
+		if t != nil {
+			if err := l.processTask(t); err != nil {
+				return err
+			}
+		}
 	}
 
 	// drain ready channel of any existing tasks
