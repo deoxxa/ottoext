@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 
 	"github.com/GeertJohan/go.rice"
@@ -54,6 +55,10 @@ func (t *fetchTask) Cancel() {
 }
 
 func Define(vm *otto.Otto, l *loop.Loop) error {
+	return DefineWithHandler(vm, l, nil)
+}
+
+func DefineWithHandler(vm *otto.Otto, l *loop.Loop, h http.Handler) error {
 	if err := promise.Define(vm, l); err != nil {
 		return err
 	}
@@ -97,31 +102,51 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 				return
 			}
 
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				t.err = err
-				return
-			}
+			if h != nil && urlStr[0] == '/' {
+				res := httptest.NewRecorder()
 
-			jsRes.Set("status", res.StatusCode)
-			jsRes.Set("statusText", res.Status)
-			h := mustValue(jsRes.Get("headers")).Object()
-			for k, vs := range res.Header {
-				for _, v := range vs {
-					if _, err := h.Call("append", k, v); err != nil {
-						t.err = err
-						return
+				h.ServeHTTP(res, req)
+
+				jsRes.Set("status", res.Code)
+				jsRes.Set("statusText", http.StatusText(res.Code))
+				h := mustValue(jsRes.Get("headers")).Object()
+				for k, vs := range res.Header() {
+					for _, v := range vs {
+						if _, err := h.Call("append", k, v); err != nil {
+							t.err = err
+							return
+						}
 					}
 				}
-			}
 
-			d, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				t.err = err
-				return
-			}
+				jsRes.Set("_body", string(res.Body.Bytes()))
+			} else {
+				res, err := http.DefaultClient.Do(req)
+				if err != nil {
+					t.err = err
+					return
+				}
 
-			jsRes.Set("_body", string(d))
+				jsRes.Set("status", res.StatusCode)
+				jsRes.Set("statusText", res.Status)
+				h := mustValue(jsRes.Get("headers")).Object()
+				for k, vs := range res.Header {
+					for _, v := range vs {
+						if _, err := h.Call("append", k, v); err != nil {
+							t.err = err
+							return
+						}
+					}
+				}
+
+				d, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					t.err = err
+					return
+				}
+
+				jsRes.Set("_body", string(d))
+			}
 		}()
 
 		return otto.UndefinedValue()
