@@ -154,6 +154,10 @@ func TestFetchJSON(t *testing.T) {
 }
 
 func TestFetchJSONRepeated(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	for i := 0; i < 100; i++ {
 		TestFetchJSON(t)
 	}
