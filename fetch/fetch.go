@@ -1,6 +1,7 @@
 package fetch // import "fknsrs.biz/p/ottoext/fetch"
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/GeertJohan/go.rice"
+	"github.com/MathieuTurcotte/sourcemap"
 	"github.com/robertkrimen/otto"
 
 	"fknsrs.biz/p/ottoext/loop"
@@ -58,14 +60,37 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 	return DefineWithHandler(vm, l, nil)
 }
 
+type compileWithSourcemap interface {
+	CompileWithSourceMap(filename string, src interface{}, sm *sourcemap.SourceMap) (*otto.Script, error)
+}
+
 func DefineWithHandler(vm *otto.Otto, l *loop.Loop, h http.Handler) error {
 	if err := promise.Define(vm, l); err != nil {
 		return err
 	}
 
-	s, err := vm.Compile("fetch.js", rice.MustFindBox("dist-fetch").MustString("bundle.js"))
-	if err != nil {
-		return err
+	var v interface{} = vm
+	var s *otto.Script
+
+	src := rice.MustFindBox("dist-fetch").MustString("bundle.js")
+
+	if withSourcemap, ok := v.(compileWithSourcemap); ok {
+		sm, err := sourcemap.Read(bytes.NewReader(rice.MustFindBox("dist-fetch").MustBytes("bundle.js.map")))
+		if err != nil {
+			return err
+		}
+
+		s, err = withSourcemap.CompileWithSourceMap("fetch-bundle.js", src, &sm)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+
+		s, err = vm.Compile("fetch-bundle.js", src)
+		if err != nil {
+			return err
+		}
 	}
 
 	if _, err := vm.Run(s); err != nil {

@@ -1,4 +1,5 @@
 module.exports = {
+  devtool: 'source-map',
   entry: './index',
   output: {
     filename: 'bundle.js',

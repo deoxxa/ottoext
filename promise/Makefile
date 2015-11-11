@@ -4,6 +4,7 @@ dist-promise.rice-box.go: dist-promise/bundle.js
 dist-promise/bundle.js: js/bundle.js
 	mkdir -p dist-promise
 	cp -a js/bundle.js dist-promise/bundle.js
+	cp -a js/bundle.js.map dist-promise/bundle.js.map
 
 js/bundle.js: js/index.js js/package.json
 	cd js && npm install && npm run bundle${BUNDLE_SUFFIX}
