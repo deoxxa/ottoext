@@ -196,3 +196,31 @@ func TestFetchWithHandler(t *testing.T) {
 
 	<-ch
 }
+
+func TestFetchWithHandlerParallel(t *testing.T) {
+	m := http.NewServeMux()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello"))
+	})
+
+	vm := otto.New()
+	l := loop.New(vm)
+
+	if err := DefineWithHandler(vm, l, m); err != nil {
+		panic(err)
+	}
+
+	ch := make(chan bool, 1)
+
+	if err := vm.Set("__capture", func(c otto.FunctionCall) otto.Value {
+		defer func() { ch <- true }()
+
+		return otto.UndefinedValue()
+	}); err != nil {
+		panic(err)
+	}
+
+	must(l.EvalAndRun(`Promise.all([1,2,3,4,5].map(function(i) { return fetch('/' + i); })).then(__capture)`))
+
+	<-ch
+}
