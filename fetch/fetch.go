@@ -14,6 +14,7 @@ import (
 
 	"fknsrs.biz/p/ottoext/loop"
 	"fknsrs.biz/p/ottoext/promise"
+	"fknsrs.biz/p/ottoext/types"
 )
 
 func mustValue(v otto.Value, err error) otto.Value {
@@ -34,7 +35,7 @@ type fetchTask struct {
 func (t *fetchTask) SetID(id int64) { t.id = id }
 func (t *fetchTask) GetID() int64   { return t.id }
 
-func (t *fetchTask) Execute(vm *otto.Otto, l *loop.Loop) error {
+func (t *fetchTask) Execute(vm types.BasicVM, l *loop.Loop) error {
 	var arguments []interface{}
 
 	if t.err != nil {
@@ -56,15 +57,11 @@ func (t *fetchTask) Execute(vm *otto.Otto, l *loop.Loop) error {
 func (t *fetchTask) Cancel() {
 }
 
-func Define(vm *otto.Otto, l *loop.Loop) error {
+func Define(vm types.BasicVM, l *loop.Loop) error {
 	return DefineWithHandler(vm, l, nil)
 }
 
-type compileWithSourcemap interface {
-	CompileWithSourceMap(filename string, src interface{}, sm *sourcemap.SourceMap) (*otto.Script, error)
-}
-
-func DefineWithHandler(vm *otto.Otto, l *loop.Loop, h http.Handler) error {
+func DefineWithHandler(vm types.BasicVM, l *loop.Loop, h http.Handler) error {
 	if err := promise.Define(vm, l); err != nil {
 		return err
 	}
@@ -74,13 +71,13 @@ func DefineWithHandler(vm *otto.Otto, l *loop.Loop, h http.Handler) error {
 
 	src := rice.MustFindBox("dist-fetch").MustString("bundle.js")
 
-	if withSourcemap, ok := v.(compileWithSourcemap); ok {
+	if svm, ok := v.(types.SourceMapVM); ok {
 		sm, err := sourcemap.Read(bytes.NewReader(rice.MustFindBox("dist-fetch").MustBytes("bundle.js.map")))
 		if err != nil {
 			return err
 		}
 
-		s, err = withSourcemap.CompileWithSourceMap("fetch-bundle.js", src, &sm)
+		s, err = svm.CompileWithSourceMap("fetch-bundle.js", src, &sm)
 		if err != nil {
 			return err
 		}

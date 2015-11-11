@@ -5,7 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/robertkrimen/otto"
+	"fknsrs.biz/p/ottoext/types"
 )
 
 func formatTask(t Task) string {
@@ -19,12 +19,12 @@ func formatTask(t Task) string {
 type Task interface {
 	SetID(id int64)
 	GetID() int64
-	Execute(vm *otto.Otto, l *Loop) error
+	Execute(vm types.BasicVM, l *Loop) error
 	Cancel()
 }
 
 type Loop struct {
-	vm     *otto.Otto
+	vm     types.BasicVM
 	id     int64
 	lock   sync.RWMutex
 	tasks  map[int64]Task
@@ -32,11 +32,11 @@ type Loop struct {
 	closed bool
 }
 
-func New(vm *otto.Otto) *Loop {
+func New(vm types.BasicVM) *Loop {
 	return NewWithBacklog(vm, 0)
 }
 
-func NewWithBacklog(vm *otto.Otto, backlog int) *Loop {
+func NewWithBacklog(vm types.BasicVM, backlog int) *Loop {
 	return &Loop{
 		vm:    vm,
 		tasks: make(map[int64]Task),

@@ -9,13 +9,10 @@ import (
 
 	"fknsrs.biz/p/ottoext/loop"
 	"fknsrs.biz/p/ottoext/timers"
+	"fknsrs.biz/p/ottoext/types"
 )
 
-type compileWithSourcemap interface {
-	CompileWithSourceMap(filename string, src interface{}, sm *sourcemap.SourceMap) (*otto.Script, error)
-}
-
-func Define(vm *otto.Otto, l *loop.Loop) error {
+func Define(vm types.BasicVM, l *loop.Loop) error {
 	if v, err := vm.Get("Promise"); err != nil {
 		return err
 	} else if !v.IsUndefined() {
@@ -31,13 +28,13 @@ func Define(vm *otto.Otto, l *loop.Loop) error {
 
 	src := rice.MustFindBox("dist-promise").MustString("bundle.js")
 
-	if withSourcemap, ok := v.(compileWithSourcemap); ok {
+	if svm, ok := v.(types.SourceMapVM); ok {
 		sm, err := sourcemap.Read(bytes.NewReader(rice.MustFindBox("dist-promise").MustBytes("bundle.js.map")))
 		if err != nil {
 			return err
 		}
 
-		s, err = withSourcemap.CompileWithSourceMap("promise-bundle.js", src, &sm)
+		s, err = svm.CompileWithSourceMap("promise-bundle.js", src, &sm)
 		if err != nil {
 			return err
 		}
