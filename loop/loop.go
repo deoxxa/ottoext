@@ -16,6 +16,16 @@ func formatTask(t Task) string {
 	return fmt.Sprintf("<%T> %d", t, t.GetID())
 }
 
+// Task represents something that the event loop can schedule and run.
+//
+// Task describes two operations that will almost always be boilerplate,
+// SetID and GetID. They exist so that the event loop can identify tasks
+// after they're added.
+//
+// Execute is called when a task has been pulled from the "ready" queue.
+//
+// Cancel is called when a task is removed from the loop without being
+// finalised.
 type Task interface {
 	SetID(id int64)
 	GetID() int64
@@ -23,6 +33,11 @@ type Task interface {
 	Cancel()
 }
 
+// Loop encapsulates the event loop's state. This includes the vm on which the
+// loop operates, a monotonically incrementing event id, a map of tasks that
+// aren't ready yet, keyed by their ID, and a channel of tasks that are ready
+// to finalise on the VM. The channel holding the tasks pending finalising can
+// be buffered or unbuffered.
 type Loop struct {
 	vm     types.BasicVM
 	id     int64
@@ -32,10 +47,13 @@ type Loop struct {
 	closed bool
 }
 
+// New creates a new Loop with an unbuffered ready queue on a specific VM.
 func New(vm types.BasicVM) *Loop {
 	return NewWithBacklog(vm, 0)
 }
 
+// NewWithBacklog creates a new Loop on a specific VM, giving it a buffered
+// queue, the capacity of which being specified by the backlog argument.
 func NewWithBacklog(vm types.BasicVM, backlog int) *Loop {
 	return &Loop{
 		vm:    vm,
@@ -44,6 +62,9 @@ func NewWithBacklog(vm types.BasicVM, backlog int) *Loop {
 	}
 }
 
+// Add puts a task into the loop. This signals to the loop that this task is
+// doing something outside of the JavaScript environment, and that at some
+// point, it will become ready for finalising.
 func (l *Loop) Add(t Task) {
 	l.lock.Lock()
 	t.SetID(atomic.AddInt64(&l.id, 1))
@@ -51,6 +72,9 @@ func (l *Loop) Add(t Task) {
 	l.lock.Unlock()
 }
 
+// Remove takes a task out of the loop. This should not be called if a task
+// has already become ready for finalising. Warranty void if constraint is
+// broken.
 func (l *Loop) Remove(t Task) {
 	l.remove(t)
 	go l.Ready(nil)
@@ -66,6 +90,8 @@ func (l *Loop) removeByID(id int64) {
 	l.lock.Unlock()
 }
 
+// Ready signals to the loop that a task is ready to be finalised. This might
+// block if the "ready channel" in the loop is at capacity.
 func (l *Loop) Ready(t Task) {
 	if l.closed {
 		return
@@ -74,6 +100,7 @@ func (l *Loop) Ready(t Task) {
 	l.ready <- t
 }
 
+// EvalAndRun is a combination of Eval and Run. Creatively named.
 func (l *Loop) EvalAndRun(s interface{}) error {
 	if err := l.Eval(s); err != nil {
 		return err
@@ -82,6 +109,8 @@ func (l *Loop) EvalAndRun(s interface{}) error {
 	return l.Run()
 }
 
+// Eval executes some code in the VM associated with the loop and returns an
+// error if that execution fails.
 func (l *Loop) Eval(s interface{}) error {
 	if _, err := l.vm.Run(s); err != nil {
 		return err
@@ -108,6 +137,8 @@ func (l *Loop) processTask(t Task) error {
 	return nil
 }
 
+// Run handles the task scheduling and finalisation. It will block until
+// there's no work left to do, or an error occurs.
 func (l *Loop) Run() error {
 	for {
 		l.lock.Lock()
