@@ -30,6 +30,10 @@ type fetchTask struct {
 	jsReq, jsRes *otto.Object
 	cb           otto.Value
 	err          error
+	status       int
+	statusText   string
+	headers      map[string][]string
+	body         []byte
 }
 
 func (t *fetchTask) SetID(id int64) { t.id = id }
@@ -46,6 +50,18 @@ func (t *fetchTask) Execute(vm types.BasicVM, l *loop.Loop) error {
 
 		arguments = append(arguments, e)
 	}
+
+	t.jsRes.Set("status", t.status)
+	t.jsRes.Set("statusText", t.statusText)
+	h := mustValue(t.jsRes.Get("headers")).Object()
+	for k, vs := range t.headers {
+		for _, v := range vs {
+			if _, err := h.Call("append", k, v); err != nil {
+				return err
+			}
+		}
+	}
+	t.jsRes.Set("_body", string(t.body))
 
 	if _, err := t.cb.Call(otto.NullValue(), arguments...); err != nil {
 		return err
@@ -129,36 +145,15 @@ func DefineWithHandler(vm types.BasicVM, l *loop.Loop, h http.Handler) error {
 
 				h.ServeHTTP(res, req)
 
-				jsRes.Set("status", res.Code)
-				jsRes.Set("statusText", http.StatusText(res.Code))
-				h := mustValue(jsRes.Get("headers")).Object()
-				for k, vs := range res.Header() {
-					for _, v := range vs {
-						if _, err := h.Call("append", k, v); err != nil {
-							t.err = err
-							return
-						}
-					}
-				}
-
-				jsRes.Set("_body", string(res.Body.Bytes()))
+				t.status = res.Code
+				t.statusText = http.StatusText(res.Code)
+				t.headers = res.Header()
+				t.body = res.Body.Bytes()
 			} else {
 				res, err := http.DefaultClient.Do(req)
 				if err != nil {
 					t.err = err
 					return
-				}
-
-				jsRes.Set("status", res.StatusCode)
-				jsRes.Set("statusText", res.Status)
-				h := mustValue(jsRes.Get("headers")).Object()
-				for k, vs := range res.Header {
-					for _, v := range vs {
-						if _, err := h.Call("append", k, v); err != nil {
-							t.err = err
-							return
-						}
-					}
 				}
 
 				d, err := ioutil.ReadAll(res.Body)
@@ -167,7 +162,10 @@ func DefineWithHandler(vm types.BasicVM, l *loop.Loop, h http.Handler) error {
 					return
 				}
 
-				jsRes.Set("_body", string(d))
+				t.status = res.StatusCode
+				t.statusText = res.Status
+				t.headers = res.Header
+				t.body = d
 			}
 		}()
 
