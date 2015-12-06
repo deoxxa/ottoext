@@ -1,4 +1,6 @@
-'use strict';
+package promise
+
+const src = `'use strict';
 
 /**
  * @constructor
@@ -259,7 +261,7 @@ Promise.all = function all(arr) {
 
   done();
 
-  return d;
+  return p;
 }
 
 Promise.race = function race(arr) {
@@ -313,3 +315,4 @@ Promise.race = function race(arr) {
 }
 
 Promise._p = 1;
+`
