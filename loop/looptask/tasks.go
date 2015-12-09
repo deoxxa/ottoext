@@ -37,10 +37,11 @@ func (i IdleTask) Execute(vm types.BasicVM, l *loop.Loop) error {
 // EvalTask schedules running an otto.Script. It has two channels for
 // communicating the result of the execution.
 type EvalTask struct {
-	ID     int64
-	Script interface{}
-	Value  chan otto.Value
-	Error  chan error
+	ID        int64
+	Script    interface{}
+	Value     chan otto.Value
+	Error     chan error
+	SoftError bool
 }
 
 // NewEvalTask creates a new EvalTask for a given otto.Script, creating two
@@ -69,6 +70,11 @@ func (e EvalTask) Execute(vm types.BasicVM, l *loop.Loop) error {
 	v, err := vm.Run(e.Script)
 	e.Value <- v
 	e.Error <- err
+
+	if e.SoftError {
+		return nil
+	}
+
 	return err
 }
 
