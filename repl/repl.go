@@ -3,6 +3,7 @@
 package repl // import "fknsrs.biz/p/ottoext/repl"
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
@@ -125,7 +126,12 @@ func RunWithPromptAndPrelude(l *loop.Loop, prompt, prelude string) error {
 					io.Copy(rl.Stdout(), strings.NewReader(err.Error()))
 				}
 			} else {
-				rl.Stdout().Write([]byte(v.String() + "\n"))
+				f, err := format(v, 80, 2, 5)
+				if err != nil {
+					panic(err)
+				}
+
+				rl.Stdout().Write([]byte(f + "\n"))
 			}
 		}
 
@@ -133,4 +139,13 @@ func RunWithPromptAndPrelude(l *loop.Loop, prompt, prelude string) error {
 	}
 
 	return rl.Close()
+}
+
+func inspect(v otto.Value, width, indent int) string {
+	switch {
+	case v.IsBoolean(), v.IsNull(), v.IsNumber(), v.IsString(), v.IsUndefined(), v.IsNaN():
+		return fmt.Sprintf("%s%q", strings.Repeat("  ", indent), v.String())
+	default:
+		return ""
+	}
 }
