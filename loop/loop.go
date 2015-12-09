@@ -62,6 +62,13 @@ func NewWithBacklog(vm types.BasicVM, backlog int) *Loop {
 	}
 }
 
+// VM gets the JavaScript interpreter associated with the loop. This will be
+// some kind of Otto object, but it's wrapped in an interface so the
+// `ottoext` library can work with forks/extensions of otto.
+func (l *Loop) VM() types.BasicVM {
+	return l.vm
+}
+
 // Add puts a task into the loop. This signals to the loop that this task is
 // doing something outside of the JavaScript environment, and that at some
 // point, it will become ready for finalising.
