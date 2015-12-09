@@ -38,14 +38,14 @@ func (i IdleTask) Execute(vm types.BasicVM, l *loop.Loop) error {
 // communicating the result of the execution.
 type EvalTask struct {
 	ID     int64
-	Script *otto.Script
+	Script interface{}
 	Value  chan otto.Value
 	Error  chan error
 }
 
 // NewEvalTask creates a new EvalTask for a given otto.Script, creating two
 // buffered channels for the response.
-func NewEvalTask(s *otto.Script) *EvalTask {
+func NewEvalTask(s interface{}) *EvalTask {
 	return &EvalTask{
 		Script: s,
 		Value:  make(chan otto.Value, 1),
