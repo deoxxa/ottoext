@@ -13,6 +13,7 @@ import (
 	"github.com/robertkrimen/otto/repl"
 
 	"fknsrs.biz/p/ottoext/fetch"
+	"fknsrs.biz/p/ottoext/process"
 	"fknsrs.biz/p/ottoext/promise"
 	"fknsrs.biz/p/ottoext/timers"
 )
@@ -40,6 +41,9 @@ func main() {
 		panic(err)
 	}
 	if err := fetch.Define(vm, l); err != nil {
+		panic(err)
+	}
+	if err := process.Define(vm, flag.Args()); err != nil {
 		panic(err)
 	}
 
