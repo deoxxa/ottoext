@@ -82,11 +82,12 @@ func (e EvalTask) Execute(vm types.BasicVM, l *loop.Loop) error {
 // with a specific set of arguments. It has two channels for communicating the
 // result of the call.
 type CallTask struct {
-	ID       int64
-	Function otto.Value
-	Args     []interface{}
-	Value    chan otto.Value
-	Error    chan error
+	ID        int64
+	Function  otto.Value
+	Args      []interface{}
+	Value     chan otto.Value
+	Error     chan error
+	SoftError bool
 }
 
 // NewCallTask creates a new CallTask object for a given otto.Value (which
@@ -117,5 +118,10 @@ func (c CallTask) Execute(vm types.BasicVM, l *loop.Loop) error {
 	v, err := c.Function.Call(otto.NullValue(), c.Args...)
 	c.Value <- v
 	c.Error <- err
+
+	if c.SoftError {
+		return nil
+	}
+
 	return err
 }
