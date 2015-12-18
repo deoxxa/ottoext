@@ -59,6 +59,11 @@ func main() {
 			panic(err)
 		}
 
+		// this is a very cheap way of "supporting" shebang lines
+		if d[0] == '#' {
+			d = []byte("// " + string(d))
+		}
+
 		s, err := vm.Compile(flag.Arg(0), string(d))
 		if err != nil {
 			panic(err)
