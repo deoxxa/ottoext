@@ -1,26 +1,35 @@
 const Headers = require('./headers');
 
 export default class Request {
-  constructor(input, {method='GET', headers={}, body=null, redirect='manual'}={}) {
-    if (input instanceof Request) {
-      const {
-        otherURL,
-        otherMethod,
-        otherHeaders,
-        otherRedirect,
-      } = input;
+  constructor(input, {method, headers, redirect, body}={}) {
+    this.method = 'GET';
+    this.headers = new Headers({});
+    this.redirect = 'manual';
+    this.body = null;
 
-      this.url = otherURL;
-      this.method = otherMethod;
-      this.headers = new Headers(otherHeaders);
-      this.redirect = otherRedirect;
+    if (input instanceof Request) {
+      this.url = input.url;
+      this.method = input.method;
+      this.headers = new Headers(input.headers);
+      this.redirect = input.redirect;
     } else {
       this.url = input;
     }
 
-    this.method = method;
-    this.headers = new Headers(headers);
-    this.body = body;
-    this.redirect = redirect;
+    if (method) {
+      this.method = method;
+    }
+
+    if (headers) {
+      this.headers = new Headers(headers);
+    }
+
+    if (redirect) {
+      this.redirect = redirect;
+    }
+
+    if (body) {
+      this.body = body;
+    }
   }
 }
