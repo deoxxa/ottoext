@@ -117,35 +117,42 @@
 	var Request = function Request(input) {
 	  var _ref = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 	
-	  var _ref$method = _ref.method;
-	  var method = _ref$method === undefined ? 'GET' : _ref$method;
-	  var _ref$headers = _ref.headers;
-	  var headers = _ref$headers === undefined ? {} : _ref$headers;
-	  var _ref$body = _ref.body;
-	  var body = _ref$body === undefined ? null : _ref$body;
-	  var _ref$redirect = _ref.redirect;
-	  var redirect = _ref$redirect === undefined ? 'manual' : _ref$redirect;
+	  var method = _ref.method;
+	  var headers = _ref.headers;
+	  var redirect = _ref.redirect;
+	  var body = _ref.body;
 	
 	  _classCallCheck(this, Request);
 	
-	  if (input instanceof Request) {
-	    var otherURL = input.otherURL;
-	    var otherMethod = input.otherMethod;
-	    var otherHeaders = input.otherHeaders;
-	    var otherRedirect = input.otherRedirect;
+	  this.method = 'GET';
+	  this.headers = new Headers({});
+	  this.redirect = 'manual';
+	  this.body = null;
 	
-	    this.url = otherURL;
-	    this.method = otherMethod;
-	    this.headers = new Headers(otherHeaders);
-	    this.redirect = otherRedirect;
+	  if (input instanceof Request) {
+	    this.url = input.url;
+	    this.method = input.method;
+	    this.headers = new Headers(input.headers);
+	    this.redirect = input.redirect;
 	  } else {
 	    this.url = input;
 	  }
 	
-	  this.method = method;
-	  this.headers = new Headers(headers);
-	  this.body = body;
-	  this.redirect = redirect;
+	  if (method) {
+	    this.method = method;
+	  }
+	
+	  if (headers) {
+	    this.headers = new Headers(headers);
+	  }
+	
+	  if (redirect) {
+	    this.redirect = redirect;
+	  }
+	
+	  if (body) {
+	    this.body = body;
+	  }
 	};
 	
 	exports['default'] = Request;
