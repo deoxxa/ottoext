@@ -4,10 +4,10 @@ import (
 	"os"
 	"strings"
 
-	"fknsrs.biz/p/ottoext/types"
+	"github.com/robertkrimen/otto"
 )
 
-func Define(vm types.BasicVM, argv []string) error {
+func Define(vm *otto.Otto, argv []string) error {
 	if v, err := vm.Get("process"); err != nil {
 		return err
 	} else if !v.IsUndefined() {

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"fknsrs.biz/p/ottoext/types"
+	"github.com/robertkrimen/otto"
 )
 
 func formatTask(t Task) string {
@@ -29,7 +29,7 @@ func formatTask(t Task) string {
 type Task interface {
 	SetID(id int64)
 	GetID() int64
-	Execute(vm types.BasicVM, l *Loop) error
+	Execute(vm *otto.Otto, l *Loop) error
 	Cancel()
 }
 
@@ -39,7 +39,7 @@ type Task interface {
 // to finalise on the VM. The channel holding the tasks pending finalising can
 // be buffered or unbuffered.
 type Loop struct {
-	vm     types.BasicVM
+	vm     *otto.Otto
 	id     int64
 	lock   sync.RWMutex
 	tasks  map[int64]Task
@@ -48,13 +48,13 @@ type Loop struct {
 }
 
 // New creates a new Loop with an unbuffered ready queue on a specific VM.
-func New(vm types.BasicVM) *Loop {
+func New(vm *otto.Otto) *Loop {
 	return NewWithBacklog(vm, 0)
 }
 
 // NewWithBacklog creates a new Loop on a specific VM, giving it a buffered
 // queue, the capacity of which being specified by the backlog argument.
-func NewWithBacklog(vm types.BasicVM, backlog int) *Loop {
+func NewWithBacklog(vm *otto.Otto, backlog int) *Loop {
 	return &Loop{
 		vm:    vm,
 		tasks: make(map[int64]Task),
@@ -65,7 +65,7 @@ func NewWithBacklog(vm types.BasicVM, backlog int) *Loop {
 // VM gets the JavaScript interpreter associated with the loop. This will be
 // some kind of Otto object, but it's wrapped in an interface so the
 // `ottoext` library can work with forks/extensions of otto.
-func (l *Loop) VM() types.BasicVM {
+func (l *Loop) VM() *otto.Otto {
 	return l.vm
 }
 

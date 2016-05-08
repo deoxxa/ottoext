@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"fknsrs.biz/p/ottoext/loop"
-	"fknsrs.biz/p/ottoext/types"
 	"github.com/robertkrimen/otto"
 )
 
@@ -30,7 +29,7 @@ func (i IdleTask) Cancel() {}
 
 // Execute always returns an error for an IdleTask, as it should never
 // actually be run.
-func (i IdleTask) Execute(vm types.BasicVM, l *loop.Loop) error {
+func (i IdleTask) Execute(vm *otto.Otto, l *loop.Loop) error {
 	return errors.New("Idle task should never execute")
 }
 
@@ -66,7 +65,7 @@ func (e EvalTask) Cancel() {}
 // Execute runs the EvalTask's otto.Script in the vm provided, pushing the
 // resultant return value and error (or nil) into the associated channels.
 // If the execution results in an error, it will return that error.
-func (e EvalTask) Execute(vm types.BasicVM, l *loop.Loop) error {
+func (e EvalTask) Execute(vm *otto.Otto, l *loop.Loop) error {
 	v, err := vm.Run(e.Script)
 	e.Value <- v
 	e.Error <- err
@@ -114,7 +113,7 @@ func (c CallTask) Cancel() {}
 // Execute calls the associated function (not necessarily in the given vm),
 // pushing the resultant return value and error (or nil) into the associated
 // channels. If the call results in an error, it will return that error.
-func (c CallTask) Execute(vm types.BasicVM, l *loop.Loop) error {
+func (c CallTask) Execute(vm *otto.Otto, l *loop.Loop) error {
 	v, err := c.Function.Call(otto.NullValue(), c.Args...)
 	c.Value <- v
 	c.Error <- err

@@ -1,12 +1,13 @@
 package promise // import "fknsrs.biz/p/ottoext/promise"
 
 import (
+	"github.com/robertkrimen/otto"
+
 	"fknsrs.biz/p/ottoext/loop"
 	"fknsrs.biz/p/ottoext/timers"
-	"fknsrs.biz/p/ottoext/types"
 )
 
-func Define(vm types.BasicVM, l *loop.Loop) error {
+func Define(vm *otto.Otto, l *loop.Loop) error {
 	if v, err := vm.Get("Promise"); err != nil {
 		return err
 	} else if !v.IsUndefined() {
