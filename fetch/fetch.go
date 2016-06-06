@@ -104,6 +104,23 @@ func DefineWithHandler(vm *otto.Otto, l *loop.Loop, h http.Handler) error {
 			body = strings.NewReader(jsBody.String())
 		}
 
+		// Make map for headers to pass in
+		reqHeaders := make(map[string]string)
+
+		reqHdrObj := mustValue(jsReq.Get("headers")).Object()
+		// TODO: Get list of headers from jsReq object (idea: add 'list' method to headers.js?)
+		// Alternatively: iterate such as in: for (var k in r.headers._headers) { console.log(k + ':', r.headers.get(k)); }
+		for _, key := range []string{"Authorization" , "X-Amz-Date", "Content-MD5", "Content-Type", "X-Amz-User-Agent", "X-Amz-Content-Sha256"} {
+
+			var v otto.Value
+			var err error
+			if v, err = reqHdrObj.Call("get", key); err == nil {
+				if !v.IsNull() && v.String() != "undefined" {
+					reqHeaders[key] = v.String()
+				}
+			}
+		}
+
 		t := &fetchTask{
 			jsReq: jsReq,
 			jsRes: jsRes,
@@ -116,6 +133,10 @@ func DefineWithHandler(vm *otto.Otto, l *loop.Loop, h http.Handler) error {
 			defer l.Ready(t)
 
 			req, err := http.NewRequest(method, urlStr, body)
+			for k, v := range reqHeaders {
+				req.Header.Set(k, v) // Set headers
+			}
+
 			if err != nil {
 				t.err = err
 				return
