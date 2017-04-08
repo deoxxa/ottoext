@@ -131,7 +131,7 @@ func RunWithPromptAndPrelude(l *loop.Loop, prompt, prelude string) error {
 					panic(err)
 				}
 
-				rl.Stdout().Write([]byte(f + "\n"))
+				rl.Stdout().Write([]byte("\r" + f + "\n"))
 			}
 		}
 
