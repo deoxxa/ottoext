@@ -13,6 +13,8 @@ func seenWith(seen map[otto.Value]bool, v otto.Value) map[otto.Value]bool {
 		r[k] = v
 	}
 
+	r[v] = true
+
 	return r
 }
 
